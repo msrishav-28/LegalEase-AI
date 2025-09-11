@@ -1,0 +1,38 @@
+# Development-specific Docker Compose configuration
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+    environment:
+      - DEBUG=true
+      - RELOAD=true
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+
+  celery-worker:
+    volumes:
+      - ./backend:/app
+    environment:
+      - DEBUG=true
+    command: celery -A app.celery_app worker --loglevel=debug
+
+  # Additional development services
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: legalease-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - legalease-network
