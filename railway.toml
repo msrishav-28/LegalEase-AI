@@ -1,28 +1,12 @@
 [build]
 builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 
-# Services configuration
-[[services]]
-name = "backend"
-source = "backend/"
-variables = { PORT = "8000" }
-
-[[services]]
-name = "frontend"
-source = "frontend/"
-variables = { PORT = "3000" }
-
-[[services]]
-name = "celery-worker"
-source = "backend/"
-command = "celery -A app.celery_app.celery worker --loglevel=info"
-
-[[services]]
-name = "celery-beat"
-source = "backend/"
-command = "celery -A app.celery_app.celery beat --loglevel=info"
+[env]
+PORT = "8000"
