@@ -36,6 +36,7 @@ venv.bak/
 # IDEs
 .vscode/
 .idea/
+.kiro/
 *.swp
 *.swo
 *~
