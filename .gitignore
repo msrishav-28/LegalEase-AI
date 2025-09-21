@@ -69,6 +69,17 @@ coverage/
 htmlcov/
 .pytest_cache/
 .cache
+__tests__/
+*.test.*
+*.spec.*
+test_*.py
+*_test.py
+tests/
+e2e/
+jest.config.*
+jest.setup.*
+playwright.config.*
+pytest.ini
 
 # Logs
 logs/
