@@ -1,0 +1,28 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+# Services configuration
+[[services]]
+name = "backend"
+source = "backend/"
+variables = { PORT = "8000" }
+
+[[services]]
+name = "frontend"
+source = "frontend/"
+variables = { PORT = "3000" }
+
+[[services]]
+name = "celery-worker"
+source = "backend/"
+command = "celery -A app.celery_app.celery worker --loglevel=info"
+
+[[services]]
+name = "celery-beat"
+source = "backend/"
+command = "celery -A app.celery_app.celery beat --loglevel=info"

@@ -179,6 +179,46 @@ For production deployment:
 4. Run tests and linting
 5. Submit a pull request
 
+## 🚀 Deployment
+
+### Railway (Recommended)
+
+Deploy your entire LegalEase AI stack to Railway with one click:
+
+1. **Quick Deploy**: 
+   - Go to [railway.app](https://railway.app)
+   - Click "Deploy from GitHub"
+   - Select this repository
+   - Railway auto-detects and deploys all services
+
+2. **CLI Deploy**:
+   ```bash
+   # Install Railway CLI
+   npm install -g @railway/cli
+   
+   # Run deployment script
+   ./scripts/deploy-railway.sh  # Linux/Mac
+   scripts/deploy-railway.bat   # Windows
+   ```
+
+3. **Manual Setup**: See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) for detailed instructions
+
+**Services Deployed:**
+- FastAPI Backend
+- Next.js Frontend  
+- PostgreSQL Database
+- Redis Cache
+- Celery Workers
+- Background Task Scheduler
+
+**Estimated Cost**: ~$25-30/month for full stack
+
+### Other Platforms
+
+- **Render**: Good alternative, requires separate service configuration
+- **DigitalOcean**: App Platform supports Docker Compose
+- **AWS/GCP/Azure**: Full control, more complex setup
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
