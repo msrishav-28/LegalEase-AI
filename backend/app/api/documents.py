@@ -12,10 +12,12 @@ from app.schemas.document import (
     DocumentResponse, DocumentListResponse, DocumentUploadResponse,
     DocumentUpdate
 )
+from app.schemas.security import SecureDocumentUpload, SecureDocumentUpdate
 from app.database.models.document import DocumentType
 from app.database.models.user import User
 from app.services.document_service import DocumentService
 from app.core.dependencies import get_current_active_user
+from app.core.security import FileValidator, InputValidator
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ async def upload_document(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Upload a new document.
+    Upload a new document with comprehensive security validation.
     
     Args:
         file: The file to upload
@@ -44,13 +46,69 @@ async def upload_document(
         DocumentUploadResponse: Upload result with document info
     """
     try:
+        # Validate file is provided
+        if not file:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No file provided"
+            )
+        
+        # Read file content for validation
+        file_content = await file.read()
+        await file.seek(0)  # Reset file pointer
+        
+        # Validate filename
+        try:
+            validated_filename = InputValidator.validate_filename(file.filename)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid filename: {str(e)}"
+            )
+        
+        # Validate document name if provided
+        if name:
+            try:
+                name = InputValidator.validate_string(name, max_length=255)
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid document name: {str(e)}"
+                )
+        
+        # Comprehensive file validation
+        validation_result = await FileValidator.validate_file_upload(
+            file_content=file_content,
+            filename=validated_filename,
+            mime_type=file.content_type or "application/octet-stream"
+        )
+        
+        if not validation_result['valid']:
+            logger.warning(f"File validation failed for user {current_user.id}: {validation_result['errors']}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File validation failed: {'; '.join(validation_result['errors'])}"
+            )
+        
+        # Log warnings if any
+        if validation_result['warnings']:
+            logger.warning(f"File validation warnings for user {current_user.id}: {validation_result['warnings']}")
+        
+        # Create secure upload data
+        upload_data = SecureDocumentUpload(
+            name=name,
+            document_type=document_type.value
+        )
+        
         document = await DocumentService.upload_document(
             db=db,
             file=file,
             user=current_user,
-            document_name=name,
+            document_name=upload_data.name,
             document_type=document_type
         )
+        
+        logger.info(f"Document uploaded successfully by user {current_user.id}: {document.id}")
         
         return DocumentUploadResponse(
             message="Document uploaded successfully",
@@ -152,12 +210,12 @@ async def get_document(
 @router.put("/{document_id}", response_model=DocumentResponse)
 async def update_document(
     document_id: str,
-    update_data: DocumentUpdate,
+    update_data: SecureDocumentUpdate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Update a document.
+    Update a document with security validation.
     
     Args:
         document_id: Document ID
@@ -169,9 +227,18 @@ async def update_document(
         DocumentResponse: Updated document information
     """
     try:
+        # Validate document ID
+        try:
+            validated_doc_id = InputValidator.validate_document_id(document_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid document ID: {str(e)}"
+            )
+        
         document = await DocumentService.get_document_by_id(
             db=db,
-            document_id=document_id,
+            document_id=validated_doc_id,
             user=current_user
         )
         
@@ -181,11 +248,20 @@ async def update_document(
                 detail="Document not found"
             )
         
+        # Convert secure schema to regular update schema
+        regular_update_data = DocumentUpdate(
+            name=update_data.name,
+            document_type=update_data.document_type,
+            metadata=update_data.metadata
+        )
+        
         updated_document = await DocumentService.update_document(
             db=db,
             document=document,
-            update_data=update_data
+            update_data=regular_update_data
         )
+        
+        logger.info(f"Document updated successfully by user {current_user.id}: {document.id}")
         
         return DocumentResponse.model_validate(updated_document)
         

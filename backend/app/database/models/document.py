@@ -62,6 +62,9 @@ class Document(BaseModel):
     # Relationships
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     uploaded_by_user = relationship("User", back_populates="documents")
+    analysis_results = relationship("AnalysisResults", back_populates="document", cascade="all, delete-orphan")
+    jurisdiction_analysis = relationship("JurisdictionAnalysis", back_populates="document", cascade="all, delete-orphan")
+    sessions = relationship("DocumentSession", back_populates="document", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"<Document(id={self.id}, name={self.name}, status={self.analysis_status})>"

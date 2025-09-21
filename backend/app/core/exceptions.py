@@ -36,6 +36,36 @@ class DocumentProcessingException(LegalEaseException):
     pass
 
 
+class AIProcessingError(LegalEaseException):
+    """AI processing related exceptions."""
+    pass
+
+
+class RateLimitError(LegalEaseException):
+    """Rate limit related exceptions."""
+    pass
+
+
+class InvalidInputError(LegalEaseException):
+    """Invalid input related exceptions."""
+    pass
+
+
+class NotFoundError(LegalEaseException):
+    """Resource not found exceptions."""
+    pass
+
+
+class ValidationError(LegalEaseException):
+    """Validation error exceptions."""
+    pass
+
+
+class ConflictError(LegalEaseException):
+    """Conflict error exceptions."""
+    pass
+
+
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Handle HTTP exceptions."""
     logger.error(f"HTTP exception: {exc.status_code} - {exc.detail}")

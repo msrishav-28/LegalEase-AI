@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: legalease-ai
+  labels:
+    name: legalease-ai
+    app: legalease-ai

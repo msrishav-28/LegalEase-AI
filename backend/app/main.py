@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 import logging
+import asyncio
 
 from app.config import settings
 from app.database import init_db, close_db, get_db
@@ -16,6 +17,12 @@ from app.core.exceptions import (
     http_exception_handler,
     validation_exception_handler,
     general_exception_handler
+)
+from app.middleware.security import (
+    SecurityMiddleware,
+    RequestValidationMiddleware,
+    SQLInjectionProtectionMiddleware,
+    FileUploadSecurityMiddleware
 )
 
 # Configure logging
@@ -34,8 +41,20 @@ async def lifespan(app: FastAPI):
     try:
         await init_db()
         logger.info("Database initialized successfully")
+        
+        # Initialize cache manager
+        from app.core.cache import cache_manager
+        await cache_manager.connect()
+        logger.info("Cache manager connected successfully")
+        
+        # Start cache warming in background (non-blocking)
+        if not settings.debug:  # Only in production
+            from app.services.cache_warming import cache_warming_service
+            asyncio.create_task(cache_warming_service.warm_all_caches())
+            logger.info("Cache warming started in background")
+        
     except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
+        logger.error(f"Failed to initialize application: {e}")
         raise
     
     yield
@@ -43,6 +62,11 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down LegalEase AI Backend...")
     try:
+        # Disconnect cache manager
+        from app.core.cache import cache_manager
+        await cache_manager.disconnect()
+        logger.info("Cache manager disconnected")
+        
         await close_db()
         logger.info("Database connections closed")
     except Exception as e:
@@ -58,6 +82,12 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+# Add security middleware (order matters - most specific first)
+app.add_middleware(FileUploadSecurityMiddleware)
+app.add_middleware(SQLInjectionProtectionMiddleware)
+app.add_middleware(RequestValidationMiddleware)
+app.add_middleware(SecurityMiddleware)
 
 # Add CORS middleware
 app.add_middleware(

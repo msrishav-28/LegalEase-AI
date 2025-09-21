@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4-1106-preview"
     openai_max_tokens: int = 4096
+    ai_temperature: float = 0.1
+    ai_max_retries: int = 3
     
     # Vector Database
     pinecone_api_key: Optional[str] = None
@@ -69,3 +71,8 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Get application settings."""
+    return settings

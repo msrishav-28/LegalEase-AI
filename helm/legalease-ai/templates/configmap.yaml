@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "legalease-ai.fullname" . }}-config
+  labels:
+    {{- include "legalease-ai.labels" . | nindent 4 }}
+data:
+  DATABASE_URL: "postgresql+asyncpg://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ include "legalease-ai.fullname" . }}-postgresql:5432/{{ .Values.postgresql.auth.database }}"
+  REDIS_URL: "redis://{{ include "legalease-ai.fullname" . }}-redis-master:6379/0"
+  RABBITMQ_URL: "amqp://{{ .Values.rabbitmq.auth.username }}:{{ .Values.rabbitmq.auth.password }}@{{ include "legalease-ai.fullname" . }}-rabbitmq:5672/"
+  NEXT_PUBLIC_API_URL: "https://{{ (index .Values.ingress.hosts 1).host }}"
+  NEXT_PUBLIC_WS_URL: "wss://{{ (index .Values.ingress.hosts 1).host }}"
+  NODE_ENV: {{ .Values.env.nodeEnv | quote }}
+  DEBUG: {{ .Values.env.debug | quote }}
+  RELOAD: {{ .Values.env.reload | quote }}

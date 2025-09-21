@@ -143,3 +143,39 @@ def require_roles(required_roles: list[UserRole]):
 require_admin = require_role(UserRole.ADMIN)
 require_lawyer = require_roles([UserRole.ADMIN, UserRole.LAWYER])
 require_analyst = require_roles([UserRole.ADMIN, UserRole.LAWYER, UserRole.ANALYST])
+
+
+async def get_current_user_websocket(token: str, db: AsyncSession) -> Optional[User]:
+    """
+    Get the current authenticated user from JWT token for WebSocket connections.
+    
+    Args:
+        token: JWT token string
+        db: Database session
+        
+    Returns:
+        User: The authenticated user or None if authentication fails
+    """
+    try:
+        # Verify the token
+        payload = verify_token(token)
+        if payload is None:
+            return None
+        
+        # Extract user ID from token
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            return None
+        
+        # Get user from database
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        
+        if user is None or not user.is_active:
+            return None
+        
+        return user
+        
+    except Exception as e:
+        logger.error(f"Error getting current user for WebSocket: {e}")
+        return None

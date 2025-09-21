@@ -1,0 +1,103 @@
+# Development environment values
+# Override default values for development deployment
+
+# Backend configuration
+backend:
+  replicaCount: 1
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  
+  autoscaling:
+    enabled: false
+
+# Frontend configuration
+frontend:
+  replicaCount: 1
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  autoscaling:
+    enabled: false
+
+# Celery worker configuration
+celery:
+  worker:
+    replicaCount: 1
+    concurrency: 2
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+    autoscaling:
+      enabled: false
+
+# Ingress configuration
+ingress:
+  hosts:
+    - host: legalease-ai.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+    - host: api.legalease-ai.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: backend
+  
+  tls:
+    - secretName: legalease-dev-tls
+      hosts:
+        - legalease-ai.dev.local
+        - api.legalease-ai.dev.local
+
+# Persistent storage (smaller for dev)
+persistence:
+  uploadedFiles:
+    size: 10Gi
+
+# PostgreSQL configuration
+postgresql:
+  primary:
+    persistence:
+      size: 5Gi
+
+# Redis configuration
+redis:
+  master:
+    persistence:
+      size: 1Gi
+
+# RabbitMQ configuration
+rabbitmq:
+  persistence:
+    size: 2Gi
+
+# Environment configuration
+env:
+  nodeEnv: "development"
+  debug: true
+  reload: true
+
+# Disable monitoring in development
+serviceMonitor:
+  enabled: false
+
+# Disable pod disruption budget in development
+podDisruptionBudget:
+  enabled: false

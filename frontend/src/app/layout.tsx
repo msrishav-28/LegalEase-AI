@@ -1,12 +1,17 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import AuthProvider from '@/components/auth/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'LegalEase AI',
   description: 'Legal document analysis platform with multi-jurisdiction support',
+  keywords: 'legal, document analysis, AI, jurisdiction, contract analysis',
+  authors: [{ name: 'LegalEase AI Team' }],
+  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({
@@ -17,9 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">
-          {children}
-        </div>
+        <ErrorBoundary>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

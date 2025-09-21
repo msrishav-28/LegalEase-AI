@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: legalease-ai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      containers:
+      - name: celery-worker
+        image: legalease-ai/backend:latest
+        command:
+        - celery
+        - -A
+        - app.celery_app
+        - worker
+        - --loglevel=info
+        - --concurrency=4
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: legalease-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: legalease-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: legalease-config
+              key: RABBITMQ_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: legalease-secrets
+              key: SECRET_KEY
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: legalease-secrets
+              key: OPENAI_API_KEY
+        - name: PINECONE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: legalease-secrets
+              key: PINECONE_API_KEY
+        - name: PINECONE_ENVIRONMENT
+          valueFrom:
+            secretKeyRef:
+              name: legalease-secrets
+              key: PINECONE_ENVIRONMENT
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: uploaded-files
+          mountPath: /app/uploads
+      volumes:
+      - name: uploaded-files
+        persistentVolumeClaim:
+          claimName: uploaded-files-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: legalease-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      containers:
+      - name: celery-beat
+        image: legalease-ai/backend:latest
+        command:
+        - celery
+        - -A
+        - app.celery_app
+        - beat
+        - --loglevel=info
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: legalease-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: legalease-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: legalease-config
+              key: RABBITMQ_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: legalease-secrets
+              key: SECRET_KEY
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

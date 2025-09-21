@@ -1,0 +1,165 @@
+# Production environment values
+# Override default values for production deployment
+
+# Backend configuration
+backend:
+  replicaCount: 5
+  
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "4000m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 70
+
+# Frontend configuration
+frontend:
+  replicaCount: 3
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 60
+
+# Celery worker configuration
+celery:
+  worker:
+    replicaCount: 5
+    concurrency: 8
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "1000m"
+      limits:
+        memory: "8Gi"
+        cpu: "4000m"
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 20
+      targetCPUUtilizationPercentage: 60
+
+# Ingress configuration
+ingress:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  
+  hosts:
+    - host: legalease-ai.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+    - host: api.legalease-ai.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: backend
+  
+  tls:
+    - secretName: legalease-prod-tls
+      hosts:
+        - legalease-ai.com
+        - api.legalease-ai.com
+
+# Persistent storage (larger for production)
+persistence:
+  uploadedFiles:
+    size: 500Gi
+    storageClass: "fast-ssd"
+
+# PostgreSQL configuration
+postgresql:
+  primary:
+    persistence:
+      size: 100Gi
+      storageClass: "fast-ssd"
+    
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "1000m"
+      limits:
+        memory: "8Gi"
+        cpu: "4000m"
+
+# Redis configuration
+redis:
+  master:
+    persistence:
+      size: 10Gi
+      storageClass: "fast-ssd"
+    
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
+
+# RabbitMQ configuration
+rabbitmq:
+  persistence:
+    size: 20Gi
+    storageClass: "fast-ssd"
+  
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+# Environment configuration
+env:
+  nodeEnv: "production"
+  debug: false
+  reload: false
+
+# Enable monitoring in production
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+
+# Enable pod disruption budget in production
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Enable network policies in production
+networkPolicy:
+  enabled: true
+
+# Production security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  readOnlyRootFilesystem: true
